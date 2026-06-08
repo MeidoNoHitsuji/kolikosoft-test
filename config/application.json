@@ -1,0 +1,9 @@
+{
+  "app": {
+    "name": "test",
+    "skinport_url": "https://api.skinport.com/v1"
+  },
+  "log": {
+    "level": "info"
+  }
+}
