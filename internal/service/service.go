@@ -13,7 +13,7 @@ type ServiceHolder struct {
 
 func NewServiceHolder(rep *repository.Repository, itemCache *cache.ItemCache, log *zerolog.Logger) *ServiceHolder {
 	return &ServiceHolder{
-		Account: NewAccountService(rep, log),
+		Account: NewAccountService(rep, itemCache, log),
 		Item:    NewItemService(itemCache, log),
 	}
 }

@@ -18,3 +18,12 @@ func (i Item) MarketHashName() string {
 	_ = json.Unmarshal(i[MarketHashNameKey], &name)
 	return name
 }
+
+// Т.к. на данный момент нам нужно только 1 поле у предмета, то при доставании предмета из кеша ограничусь им
+// ну и именем.. Просто чтобы было)
+type ItemInfo struct {
+	MarketHashName string `json:"market_hash_name"`
+	// Данное поле было заполнено в большинстве случаев и представляет оптимальную цену за товар.
+	// Так что я отталкиваюсь от данной цены.
+	SuggestedPrice *float64 `json:"suggested_price"`
+}

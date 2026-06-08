@@ -84,5 +84,20 @@ func (c *AccountController) addMoney(ginCtx *gin.Context) {
 }
 
 func (c *AccountController) buyItem(ginCtx *gin.Context) {
+	var r request.AccountBuyItem
 
+	data, err := r.Validate(ginCtx)
+	if err != nil {
+		errorHandler(ginCtx, err)
+		return
+	}
+
+	ctx := ginCtx.Request.Context()
+	account, err := c.srv.BuyItem(ctx, data)
+	if err != nil {
+		errorHandler(ginCtx, err)
+		return
+	}
+
+	ginCtx.JSON(http.StatusOK, account)
 }

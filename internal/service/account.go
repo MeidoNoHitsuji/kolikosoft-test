@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/MeidoNoHitsuji/kolikosoft-test/internal/cache"
 	backErr "github.com/MeidoNoHitsuji/kolikosoft-test/internal/errors"
 	"github.com/MeidoNoHitsuji/kolikosoft-test/internal/model"
 	"github.com/MeidoNoHitsuji/kolikosoft-test/internal/repository"
@@ -10,14 +11,16 @@ import (
 )
 
 type AccountService struct {
-	rep *repository.Repository
-	log *zerolog.Logger
+	rep       *repository.Repository
+	itemCache *cache.ItemCache
+	log       *zerolog.Logger
 }
 
-func NewAccountService(rep *repository.Repository, log *zerolog.Logger) *AccountService {
+func NewAccountService(rep *repository.Repository, itemCache *cache.ItemCache, log *zerolog.Logger) *AccountService {
 	return &AccountService{
-		rep: rep,
-		log: log,
+		rep:       rep,
+		itemCache: itemCache,
+		log:       log,
 	}
 }
 
@@ -42,6 +45,30 @@ func (s *AccountService) GetAccountHistoriesByAccountID(ctx context.Context, id 
 }
 
 func (s *AccountService) AddMoney(ctx context.Context, data *model.AccountAddMoney) (*model.Account, error) {
+	return s.changeBalance(ctx, data, "Пополнение баланса")
+}
+
+func (s *AccountService) BuyItem(ctx context.Context, data *model.AccountBuyItem) (*model.Account, error) {
+	item, err := s.itemCache.GetItem(ctx, data.HashMarketName)
+	if err != nil {
+		s.log.Err(err).Str("hash_market_name", data.HashMarketName).Msg("Не удалось найти предмет в кеше")
+		return nil, err
+	}
+
+	if item.SuggestedPrice == nil {
+		return nil, backErr.ErrItemPriceEmpty
+	}
+
+	value := int64(*item.SuggestedPrice * 100)
+	txData := &model.AccountAddMoney{
+		ID:    data.ID,
+		Value: -value,
+	}
+
+	return s.changeBalance(ctx, txData, "Покупка предмета: "+data.HashMarketName)
+}
+
+func (s *AccountService) changeBalance(ctx context.Context, data *model.AccountAddMoney, comment string) (*model.Account, error) {
 	tx, err := s.rep.BeginTx(ctx)
 	if err != nil {
 		s.log.Err(err).Msg("Не удалось начать транзакцию")
@@ -56,6 +83,8 @@ func (s *AccountService) AddMoney(ctx context.Context, data *model.AccountAddMon
 		}
 		return nil, err
 	}
+
+	result.Comment = comment
 
 	err = s.rep.TxAddHistory(ctx, tx, result)
 	if err != nil {

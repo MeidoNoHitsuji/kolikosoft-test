@@ -67,7 +67,7 @@ func (c *ItemCache) SetItems(ctx context.Context, items []model.Item) error {
 	return err
 }
 
-func (c *ItemCache) GetItem(ctx context.Context, name string) (*model.Item, error) {
+func (c *ItemCache) GetItem(ctx context.Context, name string) (*model.ItemInfo, error) {
 	payload, err := c.client.HGet(ctx, itemsKey, name).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -76,7 +76,7 @@ func (c *ItemCache) GetItem(ctx context.Context, name string) (*model.Item, erro
 		return nil, err
 	}
 
-	var item model.Item
+	var item model.ItemInfo
 	if err = json.Unmarshal(payload, &item); err != nil {
 		return nil, err
 	}
