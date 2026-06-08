@@ -10,6 +10,8 @@ func NewConfig(flags string) config.Config {
 
 	err := cleanenv.ReadConfig(flags, &cfg)
 	if err != nil {
+		// Тут пусть будет паника, ибо если мы не смогли инициализировать конфиги,
+		// то о какой вообще дальнейшей логике может идти речь?
 		panic(err)
 	}
 

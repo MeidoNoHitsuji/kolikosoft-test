@@ -1,15 +1,18 @@
 package service
 
-import "github.com/MeidoNoHitsuji/kolikosoft-test/internal/repository"
+import (
+	"github.com/MeidoNoHitsuji/kolikosoft-test/internal/repository"
+	"github.com/rs/zerolog"
+)
 
 type ServiceHolder struct {
 	Account *AccountService
 	Item    *ItemService
 }
 
-func NewServiceHolder(rep *repository.Repository) *ServiceHolder {
+func NewServiceHolder(rep *repository.Repository, log *zerolog.Logger) *ServiceHolder {
 	return &ServiceHolder{
-		Account: NewAccountService(rep),
-		Item:    NewItemService(rep),
+		Account: NewAccountService(rep, log),
+		Item:    NewItemService(rep, log),
 	}
 }

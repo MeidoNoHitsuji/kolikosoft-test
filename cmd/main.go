@@ -28,7 +28,7 @@ func main() {
 
 	rep := repository.New(database, &log.Logger, cfg)
 
-	srvHolder := service.NewServiceHolder(rep)
+	srvHolder := service.NewServiceHolder(rep, &log.Logger)
 	ctrHolder := controller.NewControllerHolder(srvHolder)
 
 	serve := web.NewServe(ctrHolder, &log.Logger, cfg, sd)
