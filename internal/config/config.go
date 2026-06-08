@@ -16,6 +16,7 @@ type Config struct {
 type AppConfig struct {
 	Name        string `json:"name"`
 	SkinportUrl string `json:"skinport_url"`
+	WebPort     string `json:"web_port"`
 }
 
 type DatabaseConfig struct {

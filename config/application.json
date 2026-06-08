@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "test",
-    "skinport_url": "https://api.skinport.com/v1"
+    "skinport_url": "https://api.skinport.com/v1",
+    "web_port": "8080"
   },
   "log": {
     "level": "info"
