@@ -18,6 +18,6 @@ func NewDatabase(_ context.Context, cfg config.Config, log *zerolog.Logger) *sql
 	return db
 }
 
-func Shutdown(sd *shutdowner.Shutdowner, db *sqlx.DB) {
+func ShutdownPostgres(sd *shutdowner.Shutdowner, db *sqlx.DB) {
 	sd.AddShutdownOption(db.Close, shutdowner.PriorityLayerStorage)
 }
