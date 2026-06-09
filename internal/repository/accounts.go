@@ -78,3 +78,28 @@ func (r *Repository) TxUpdateBalance(ctx context.Context, tx *sqlx.Tx, data *mod
 	result.Comment = "Пополнение баланса"
 	return &result, nil
 }
+
+func (r *Repository) TxCheckBalance(ctx context.Context, tx *sqlx.Tx, accountID int64, value int64) error {
+	const query = `
+		SELECT balance
+		FROM accounts
+		WHERE id = $1::bigint
+		FOR UPDATE
+	`
+
+	var balance int64
+	if err := tx.GetContext(ctx, &balance, query, accountID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return backErr.ErrAccountNotFound
+		}
+
+		r.log.Err(err).Msg("Не удалось проверить баланс")
+		return backErr.ErrInternalServer
+	}
+
+	if balance < value {
+		return backErr.ErrInsufficientFunds
+	}
+
+	return nil
+}

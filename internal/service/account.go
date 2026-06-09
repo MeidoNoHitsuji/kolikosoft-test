@@ -45,30 +45,6 @@ func (s *AccountService) GetAccountHistoriesByAccountID(ctx context.Context, id 
 }
 
 func (s *AccountService) AddMoney(ctx context.Context, data *model.AccountAddMoney) (*model.Account, error) {
-	return s.changeBalance(ctx, data, "Пополнение баланса")
-}
-
-func (s *AccountService) BuyItem(ctx context.Context, data *model.AccountBuyItem) (*model.Account, error) {
-	item, err := s.itemCache.GetItem(ctx, data.HashMarketName)
-	if err != nil {
-		s.log.Err(err).Str("hash_market_name", data.HashMarketName).Msg("Не удалось найти предмет в кеше")
-		return nil, err
-	}
-
-	if item.SuggestedPrice == nil {
-		return nil, backErr.ErrItemPriceEmpty
-	}
-
-	value := int64(*item.SuggestedPrice * 100)
-	txData := &model.AccountAddMoney{
-		ID:    data.ID,
-		Value: -value,
-	}
-
-	return s.changeBalance(ctx, txData, "Покупка предмета: "+data.HashMarketName)
-}
-
-func (s *AccountService) changeBalance(ctx context.Context, data *model.AccountAddMoney, comment string) (*model.Account, error) {
 	tx, err := s.rep.BeginTx(ctx)
 	if err != nil {
 		s.log.Err(err).Msg("Не удалось начать транзакцию")
@@ -84,7 +60,75 @@ func (s *AccountService) changeBalance(ctx context.Context, data *model.AccountA
 		return nil, err
 	}
 
-	result.Comment = comment
+	result.Comment = "Пополнение баланса"
+
+	err = s.rep.TxAddHistory(ctx, tx, result)
+	if err != nil {
+		if errTx := s.rep.Rollback(tx); errTx != nil {
+			s.log.Err(errTx).Msg("Не удалось откатить транзакцию")
+			return nil, backErr.ErrInternalServer
+		}
+		return nil, err
+	}
+
+	err = s.rep.Commit(tx)
+	if err != nil {
+		s.log.Err(err).Msg("Не удалось накатить транзакцию")
+		if errTx := s.rep.Rollback(tx); errTx != nil {
+			s.log.Err(errTx).Msg("Не удалось откатить транзакцию")
+			return nil, backErr.ErrInternalServer
+		}
+		return nil, backErr.ErrInternalServer
+	}
+
+	return &model.Account{
+		ID:      result.AccountID,
+		Balance: result.NewBalance,
+	}, nil
+}
+
+func (s *AccountService) BuyItem(ctx context.Context, data *model.AccountBuyItem) (*model.Account, error) {
+	item, err := s.itemCache.GetItem(ctx, data.HashMarketName)
+	if err != nil {
+		s.log.Err(err).Str("hash_market_name", data.HashMarketName).Msg("Не удалось найти предмет в кеше")
+		return nil, err
+	}
+
+	if item.SuggestedPrice == nil {
+		return nil, backErr.ErrItemPriceEmpty
+	}
+
+	value := int64(*item.SuggestedPrice * 100)
+	tx, err := s.rep.BeginTx(ctx)
+	if err != nil {
+		s.log.Err(err).Msg("Не удалось начать транзакцию")
+		return nil, backErr.ErrInternalServer
+	}
+
+	err = s.rep.TxCheckBalance(ctx, tx, data.ID, value)
+	if err != nil {
+		if errTx := s.rep.Rollback(tx); errTx != nil {
+			s.log.Err(errTx).Msg("Не удалось откатить транзакцию")
+			return nil, backErr.ErrInternalServer
+		}
+		return nil, err
+	}
+
+	txData := &model.AccountAddMoney{
+		ID:    data.ID,
+		Value: -value,
+	}
+
+	result, err := s.rep.TxUpdateBalance(ctx, tx, txData)
+	if err != nil {
+		if errTx := s.rep.Rollback(tx); errTx != nil {
+			s.log.Err(errTx).Msg("Не удалось откатить транзакцию")
+			return nil, backErr.ErrInternalServer
+		}
+		return nil, err
+	}
+
+	result.Comment = "Покупка предмета: " + data.HashMarketName
 
 	err = s.rep.TxAddHistory(ctx, tx, result)
 	if err != nil {

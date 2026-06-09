@@ -29,10 +29,11 @@ func (e *ErrorStruct) ToResponse() response.Error {
 }
 
 var (
-	ErrAccountNotFound = NewErrorStruct(http.StatusNotFound, "аккаунт не найден")
-	ErrItemNotFound    = NewErrorStruct(http.StatusNotFound, "предмет не найден")
-	ErrItemPriceEmpty  = NewErrorStruct(http.StatusBadRequest, "у предмета не найдена цена")
-	ErrInternalServer  = NewErrorStruct(http.StatusInternalServerError, "внутренняя ошибка")
+	ErrAccountNotFound   = NewErrorStruct(http.StatusNotFound, "аккаунт не найден")
+	ErrItemNotFound      = NewErrorStruct(http.StatusNotFound, "предмет не найден")
+	ErrItemPriceEmpty    = NewErrorStruct(http.StatusBadRequest, "у предмета не найдена цена")
+	ErrInsufficientFunds = NewErrorStruct(http.StatusBadRequest, "недостаточно средств")
+	ErrInternalServer    = NewErrorStruct(http.StatusInternalServerError, "внутренняя ошибка")
 	// В идеале нужно просто каждую ошибку разбирать и перезаписывать на правильный вариант, но я обойдусь таким,
 	// чтобы не показывать пользователю излишнюю внутрянку
 	ErrValidate = NewErrorStruct(http.StatusBadRequest, "ошибка валидации")
